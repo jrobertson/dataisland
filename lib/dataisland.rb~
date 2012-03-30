@@ -44,11 +44,11 @@ class DataIsland
 
     case parentName
       when 'body' 
-        return nil
-      when 'tr', 'li'
+        return null
+      when 'tr'
         return parent
       else
-        return node_to_clone(parent)
+	return node_to_clone(parent)
     end
   end
 
@@ -103,8 +103,6 @@ class DataIsland
               dest_nodes[field].text = record[field]
             when :a
               dest_nodes[field].attributes['href'] = record[field]
-          when :img
-              dest_nodes[field].attributes['src'] = record[field]
           end
         end    
 
