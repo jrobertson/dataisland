@@ -96,7 +96,7 @@ class DataIsland
             Range.new(0,rpp - 1)
       end
 
-      records = flat_records[range] if range
+      records = range ? flat_records[range] : flat_records
       
       if sort_by then
         if sort_by[/^-/].nil? then
@@ -105,7 +105,7 @@ class DataIsland
           recs = records.sort_by {|record| record[sort_by[1..-1]] }.reverse
         end
       else 
-        recs = records
+        recs = flat_records
       end
 
       recs.each do |record|

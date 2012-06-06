@@ -4,6 +4,7 @@
 
 require 'dynarex'
 require 'rexle'
+require 'rxfhelper'
 
 
 class DataIsland
@@ -12,26 +13,45 @@ class DataIsland
 
   # e.g. url = 'http://jamesrobertson.eu/index.html'
   #
-  def initialize(url)
+  def initialize(location)
 
-    useragent = {'UserAgent' => 'Dynarex dataisland to HTML converter'}
-    html_buffer = open(url, useragent).read
-    @html_doc = Rexle.new html_buffer
+    buffer, typex = RXFHelper.read(location)
+    @html_doc = Rexle.new(buffer)
 
     @html_doc.xpath('//script').map(&:delete)
+    @html_doc.xpath('//div[@datactl]').map(&:delete)
+    @html_doc.root.element('body').attributes.delete :onload
+
     h = @html_doc.element('//object').attributes
 
-    @location_href = File.dirname(url)
 
+    path = { url: -> {File.dirname(location)}, 
+            file: -> {File.expand_path(File.dirname(location))}, 
+             xml: -> {File.expand_path('.')}}    
+    
+    @location = path[typex].call
     @html_doc.xpath("//object[@type='text/xml']").each do |x|
 
       h = x.attributes
-      dynarex = Dynarex.new @location_href + '/' + h[:data]
 
+      tmp, type2 = RXFHelper.read(h[:data])
+      
+      location2 = case h[:data]
+        when /^https?:\/\//
+          h[:data]
+        when /^\//
+          @location + h[:data]
+        else
+          @location +'/' + h[:data]
+      end
+
+      dynarex = Dynarex.new location2
+      
       records = (h[:order] and h[:order][/^desc|descending$/]) ? 
         dynarex.flat_records.reverse : dynarex.flat_records
 
       xpath = "//*[@datasrc='" + '#' + h[:id] + "']"
+
       @html_doc.xpath(xpath).each do |island|      
         render(records, x.attributes, island.element('//*[@datafld]'));
       end
@@ -85,7 +105,7 @@ class DataIsland
           recs = records.sort_by {|record| record[sort_by[1..-1]] }.reverse
         end
       else 
-        recs = records
+        recs = flat_records
       end
 
       recs.each do |record|
