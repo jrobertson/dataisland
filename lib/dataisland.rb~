@@ -24,12 +24,12 @@ class DataIsland
 
     h = @html_doc.element('//object').attributes
 
-
     path = { url: -> {File.dirname(location)}, 
             file: -> {File.expand_path(File.dirname(location))}, 
              xml: -> {File.expand_path('.')}}    
     
     @location = path[typex].call
+
     @html_doc.xpath("//object[@type='text/xml']").each do |x|
 
       h = x.attributes
@@ -51,7 +51,6 @@ class DataIsland
         dynarex.flat_records.reverse : dynarex.flat_records
 
       xpath = "//*[@datasrc='" + '#' + h[:id] + "']"
-
       @html_doc.xpath(xpath).each do |island|      
         render(records, x.attributes, island.element('//*[@datafld]'));
       end
@@ -96,7 +95,7 @@ class DataIsland
             Range.new(0,rpp - 1)
       end
 
-      records = flat_records[range] if range
+      records = range ? flat_records[range] : flat_records      
       
       if sort_by then
         if sort_by[/^-/].nil? then
@@ -105,29 +104,57 @@ class DataIsland
           recs = records.sort_by {|record| record[sort_by[1..-1]] }.reverse
         end
       else 
-        recs = flat_records
+        recs = records
       end
 
       recs.each do |record|
 
         rec = rec_orig.deep_clone
-
+        rec.xpath('.//span[@class]|.//a[@class]').each do |e|
+          r = e.attribute(:class)[/\{([^\}]+)\}$/,1]
+          dest_nodes[r.to_sym] = e if r
+        end
+        
         rec.xpath('//*[@datafld]').each do |e|
           dest_nodes[e.attribute(:datafld).downcase.to_sym] = e
         end
-
+               
         dest_nodes.keys.each do |raw_field|
 
           field = raw_field.to_sym
           next if record[field].nil?
 
           case dest_nodes[field].name.downcase.to_sym
+            
             when :span
-              dest_nodes[field].text = record[field]
+
+              classx = dest_nodes[field].attributes[:class]
+
+              if classx then
+
+                if classx[/{#{field}/] then
+                  val = record[field]
+                  new_class = classx.sub(/\{[^\}]+\}/,val)
+                  dest_nodes[field].attributes[:class] = new_class
+                elsif
+                  dest_nodes[field].text = record[field]
+                end
+              elsif
+                dest_nodes[field].text = record[field]
+              end
+              
             when :a
-              dest_nodes[field].attributes['href'] = record[field]
-          when :img
-              dest_nodes[field].attributes['src'] = record[field]
+              dest_nodes[field].attributes[:href] = record[field]
+              
+              classx = dest_nodes[field].attributes[:class]
+              
+              if classx[/{#{field}/] then
+                val = record[field]
+                new_class = classx.sub(/\{[^\}]+\}/,val)
+                dest_nodes[field].attributes[:class] = new_class
+              end
+            when :img
+              dest_nodes[field].attributes[:src] = record[field]
           end
         end    
 
