@@ -110,15 +110,18 @@ class DataIsland
       recs.each do |record|
 
         rec = rec_orig.deep_clone
+
         rec.xpath('.//span[@class]|.//a[@class]').each do |e|
           r = e.attribute(:class)[/\{([^\}]+)\}$/,1]
           dest_nodes[r.to_sym] = e if r
         end
+        puts '!bank: ' + rec.xpath('.//a[@class]').inspect
+
         
-        rec.xpath('//*[@datafld]').each do |e|
+        rec.xpath('.//*[@datafld]').each do |e|
           dest_nodes[e.attribute(:datafld).downcase.to_sym] = e
         end
-               
+
         dest_nodes.keys.each do |raw_field|
 
           field = raw_field.to_sym
@@ -145,10 +148,10 @@ class DataIsland
               
             when :a
               dest_nodes[field].attributes[:href] = record[field]
-              
               classx = dest_nodes[field].attributes[:class]
-              
-              if classx[/{#{field}/] then
+
+              if classx and classx[/{#{field}/] then
+
                 val = record[field]
                 new_class = classx.sub(/\{[^\}]+\}/,val)
                 dest_nodes[field].attributes[:class] = new_class
@@ -167,3 +170,4 @@ class DataIsland
   end
 
 end
+
