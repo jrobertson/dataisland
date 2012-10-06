@@ -18,8 +18,10 @@ class DataIsland
     buffer, typex = RXFHelper.read(location)
     @html_doc = Rexle.new(buffer)
 
+    #exit
     @html_doc.xpath('//script').map(&:delete)
     @html_doc.xpath('//div[@datactl]').map(&:delete)
+
     @html_doc.root.element('body').attributes.delete :onload
 
     h = @html_doc.element('//object').attributes
@@ -51,7 +53,9 @@ class DataIsland
         dynarex.flat_records.reverse : dynarex.flat_records
 
       xpath = "//*[@datasrc='" + '#' + h[:id] + "']"
+
       @html_doc.xpath(xpath).each do |island|      
+
         render(records, x.attributes, island.element('//*[@datafld]'));
       end
     end
@@ -110,13 +114,11 @@ class DataIsland
       recs.each do |record|
 
         rec = rec_orig.deep_clone
-
-        rec.xpath('.//span[@class]|.//a[@class]').each do |e|
+        a = rec.xpath('.//span[@class]|.//a[@class]')
+        a.each do |e|
           r = e.attribute(:class)[/\{([^\}]+)\}$/,1]
           dest_nodes[r.to_sym] = e if r
         end
-        puts '!bank: ' + rec.xpath('.//a[@class]').inspect
-
         
         rec.xpath('.//*[@datafld]').each do |e|
           dest_nodes[e.attribute(:datafld).downcase.to_sym] = e
@@ -170,4 +172,3 @@ class DataIsland
   end
 
 end
-
