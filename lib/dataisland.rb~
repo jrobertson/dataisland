@@ -99,7 +99,7 @@ class DataIsland
             Range.new(0,rpp - 1)
       end
 
-      records = range ? flat_records[range] : flat_records      
+      records = range.is_a?(Range) ? flat_records[range] : flat_records      
       
       if sort_by then
         if sort_by[/^-/].nil? then
