@@ -11,7 +11,7 @@ class DataIsland
 
   attr_reader :html_doc
 
-  # e.g. url = 'http://jamesrobertson.eu/index.html'
+  # e.g. url = 'http://jamesrobertson.eu/index-template.html'
   #
   def initialize(location)
 
@@ -77,6 +77,11 @@ class DataIsland
     end
   end
 
+  def add_to_destnodes(dn, raw_key, node)
+    key = raw_key.to_sym
+    dn.has_key?(key) ? dn[key] << node : dn[key] = [node]
+  end
+  
   def render(flat_records, h, node)
 
     sort_by = h[:sort_by]
@@ -86,8 +91,6 @@ class DataIsland
 
     if rec_orig then
 
-      # get a reference to each element containing the datafld attribute
-      dest_nodes = {}
                 
       if (h[:rows_per_page]) then
 
@@ -113,52 +116,77 @@ class DataIsland
       recs.each do |record|
 
         rec = rec_orig.deep_clone
+        
+        # get a reference to each element containing the datafld attribute
+        dest_nodes = {}        
+      
         a = rec.xpath('.//span[@class]|.//a[@class]')
         a.each do |e|
           r = e.attribute(:class)[/\{([^\}]+)\}$/,1]
-          dest_nodes[r.to_sym] = e if r
+          add_to_destnodes(dest_nodes,r,e) if r
         end
         
         rec.xpath('.//*[@datafld]').each do |e|
-          dest_nodes[e.attribute(:datafld).downcase.to_sym] = e
+          add_to_destnodes(dest_nodes,e.attribute(:datafld).downcase,e)
         end
+        
+        a = rec.xpath('.//a[@href]')
+
+        a.each do |e|
+          r = e.attribute(:href)[/\{([^\}]+)\}/,1]
+          add_to_destnodes(dest_nodes,r,e) if r
+        end        
 
         dest_nodes.keys.each do |raw_field|
 
           field = raw_field.to_sym
           next if record[field].nil?
-
-          case dest_nodes[field].name.downcase.to_sym
+          
+          dest_nodes[field].each do |e2|
             
-            when :span
+            case e2.name.downcase.to_sym
+              
+              when :span
 
-              classx = dest_nodes[field].attributes[:class]
+                classx = e2.attributes[:class]
 
-              if classx then
+                if classx then
 
-                if classx[/{#{field}/] then
+                  if classx[/{#{field}/] then
+                    val = record[field]
+                    new_class = classx.sub(/\{[^\}]+\}/,val)
+                    e2.attributes[:class] = new_class
+                  elsif
+                    e2.text = record[field]
+                  end
+                elsif
+                  e2.text = record[field]
+                end
+                
+              when :a
+
+                classx = e2.attributes[:class]
+
+                if classx and classx[/{#{field}/] then
+
                   val = record[field]
                   new_class = classx.sub(/\{[^\}]+\}/,val)
-                  dest_nodes[field].attributes[:class] = new_class
-                elsif
-                  dest_nodes[field].text = record[field]
+                  e2.attributes[:class] = new_class
                 end
-              elsif
-                dest_nodes[field].text = record[field]
-              end
-              
-            when :a
-              dest_nodes[field].attributes[:href] = record[field]
-              classx = dest_nodes[field].attributes[:class]
+                
+                href = e2.attributes[:href]
 
-              if classx and classx[/{#{field}/] then
+                if href then
 
-                val = record[field]
-                new_class = classx.sub(/\{[^\}]+\}/,val)
-                dest_nodes[field].attributes[:class] = new_class
-              end
-            when :img
-              dest_nodes[field].attributes[:src] = record[field]
+                  val = record[field]
+                  new_href = href.sub(/\{[^\}]+\}/,val)
+                  e2.attributes[:href] = new_href
+                end
+                  
+              when :img
+                e2.attributes[:src] = record[field]
+            end
+            
           end
         end    
 

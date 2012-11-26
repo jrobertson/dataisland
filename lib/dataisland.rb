@@ -164,7 +164,7 @@ class DataIsland
                 end
                 
               when :a
-
+                
                 classx = e2.attributes[:class]
 
                 if classx and classx[/{#{field}/] then
@@ -182,6 +182,11 @@ class DataIsland
                   new_href = href.sub(/\{[^\}]+\}/,val)
                   e2.attributes[:href] = new_href
                 end
+
+                if e2.attributes[:datafld] then
+                  e2.attributes[:href] = record[field]
+                end
+                
                   
               when :img
                 e2.attributes[:src] = record[field]
