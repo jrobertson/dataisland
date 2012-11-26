@@ -19,7 +19,7 @@ class DataIsland
     @html_doc = Rexle.new(buffer)
 
     #exit
-    @html_doc.xpath('//script').map(&:delete)
+    @html_doc.xpath('//script[@class="dataisland"]').map(&:delete)
     @html_doc.xpath('//div[@datactl]').map(&:delete)
 
     @html_doc.root.element('body').attributes.delete :onload
@@ -29,7 +29,7 @@ class DataIsland
     path = { url: -> {File.dirname(location)}, 
             file: -> {File.expand_path(File.dirname(location))}, 
              xml: -> {File.expand_path('.')}}    
-    
+
     @location = path[typex].call
 
     @html_doc.xpath("//object[@type='text/xml']").each do |x|
@@ -55,7 +55,6 @@ class DataIsland
       xpath = "//*[@datasrc='" + '#' + h[:id] + "']"
 
       @html_doc.xpath(xpath).each do |island|      
-
         render(records, x.attributes, island.element('//*[@datafld]'));
       end
     end
@@ -100,7 +99,7 @@ class DataIsland
       end
 
       records = range.is_a?(Range) ? flat_records[range] : flat_records      
-      
+
       if sort_by then
         if sort_by[/^-/].nil? then
           recs = records.sort_by {|record| record[sort_by] }        
