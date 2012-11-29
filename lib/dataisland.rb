@@ -19,7 +19,7 @@ class DataIsland
     @html_doc = Rexle.new(buffer)
 
     #exit
-    @html_doc.xpath('//script[@class="dataisland"]').map(&:delete)
+    @html_doc.xpath('//script[@class="dataisland"]').map(&:delete)    
     @html_doc.xpath('//div[@datactl]').map(&:delete)
 
     @html_doc.root.element('body').attributes.delete :onload
@@ -57,6 +57,8 @@ class DataIsland
       @html_doc.xpath(xpath).each do |island|      
         render(records, x.attributes, island.element('//*[@datafld]'));
       end
+      
+      x.delete
     end
   end
 
@@ -191,7 +193,8 @@ class DataIsland
               when :img
                 e2.attributes[:src] = record[field]
             end
-            
+          
+            e2.attributes.delete :datafld
           end
         end    
 
