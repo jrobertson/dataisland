@@ -16,9 +16,7 @@ class DataIsland
   def initialize(location)
 
     buffer, typex = RXFHelper.read(location)
-    @html_doc = Rexle.new(buffer)
-
-    #exit
+    @html_doc = Rexle.new(buffer.sub(/^<!DOCTYPE html>/,''))
     @html_doc.xpath('//script[@class="dataisland"]').map(&:delete)    
     @html_doc.xpath('//div[@datactl]').map(&:delete)
 
@@ -57,8 +55,7 @@ class DataIsland
       @html_doc.xpath(xpath).each do |island|      
         render(records, x.attributes, island.element('//*[@datafld]'));
       end
-      
-      x.delete
+      x.delete unless h[:data] =~ /^\{/
     end
   end
 
@@ -132,10 +129,19 @@ class DataIsland
           add_to_destnodes(dest_nodes,e.attribute(:datafld).downcase,e)
         end
         
-        a = rec.xpath('.//a[@href]')
+        rec.xpath('.//a[@name]').each do |e|
+          r = e.attribute(:name)[/\{([^\}]+)\}/,1]
+          add_to_destnodes(dest_nodes,r,e) if r
+        end        
 
-        a.each do |e|
+        rec.xpath('.//a[@href]').each do |e|
           r = e.attribute(:href)[/\{([^\}]+)\}/,1]
+          add_to_destnodes(dest_nodes,r,e) if r
+        end        
+      
+        rec.xpath('.//object[@data]').each do |e|
+
+          r = e.attribute(:data)[/\{([^\}]+)\}$/,1]
           add_to_destnodes(dest_nodes,r,e) if r
         end        
 
@@ -143,9 +149,9 @@ class DataIsland
 
           field = raw_field.to_sym
           next if record[field].nil?
-          
+
           dest_nodes[field].each do |e2|
-            
+
             case e2.name.downcase.to_sym
               
               when :span
@@ -164,7 +170,21 @@ class DataIsland
                 elsif
                   e2.text = record[field]
                 end
-                
+
+              when :object
+
+                datax = e2.attributes[:data]
+
+                if datax then
+
+                  if datax[/{#{field}/] then
+
+                    val = record[field]
+                    new_data = datax.sub(/\{[^\}]+\}/,val)
+                    e2.attributes[:data] = new_data
+                  end
+                end
+                                
               when :a
                 
                 classx = e2.attributes[:class]
@@ -174,18 +194,22 @@ class DataIsland
                   val = record[field]
                   new_class = classx.sub(/\{[^\}]+\}/,val)
                   e2.attributes[:class] = new_class
-                end
-                
-                href = e2.attributes[:href]
 
-                if href then
-
+                elsif e2.attributes[:name] then
+                  
+                  name = e2.attributes[:name]
+                  val = record[field]
+                  new_name = name.sub(/\{[^\}]+\}/,val)
+                  e2.attributes[:name] = new_name
+                  
+                elsif e2.attributes[:href] then
+                  
+                  href = e2.attributes[:href]
                   val = record[field]
                   new_href = href.sub(/\{[^\}]+\}/,val)
                   e2.attributes[:href] = new_href
-                end
-
-                if e2.attributes[:datafld] then
+                  
+                elsif e2.attributes[:datafld] then
                   e2.attributes[:href] = record[field]
                 end
                 
