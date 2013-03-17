@@ -9,3 +9,4 @@ e.g.
     dataisland = DataIsland.new(url)
     dataisland.html_doc.xml pretty: true
 
+The DataIsland gem is based on DynarexJS.
