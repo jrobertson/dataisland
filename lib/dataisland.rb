@@ -3,7 +3,6 @@
 # file: dataisland.rb
 
 require 'dynarex'
-require 'rexle'
 require 'rxfhelper'
 
 
@@ -11,7 +10,7 @@ class DataIsland
 
   attr_reader :html_doc
 
-  # e.g. url = 'http://jamesrobertson.eu/index-template.html'
+  # e.g. url = 'http://www.jamesrobertson.eu/index-template.html'
   #
   def initialize(location)
 
@@ -47,8 +46,12 @@ class DataIsland
 
       dynarex = Dynarex.new location2
       
-      records = (h[:order] and h[:order][/^desc|descending$/]) ? 
-        dynarex.flat_records.reverse : dynarex.flat_records
+      if (h[:order] and h[:order][/^desc|descending$/]) \
+          or dynarex.order = 'descending' then
+        records = dynarex.flat_records.reverse
+      else
+        records = dynarex.flat_records
+      end
 
       xpath = "//*[@datasrc='" + '#' + h[:id] + "']"
 
