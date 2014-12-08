@@ -16,7 +16,10 @@ class DataIsland
 
     buffer, typex = RXFHelper.read(location)
     @html_doc = Rexle.new(buffer.sub(/^<!DOCTYPE html>/,''))
-    @html_doc.xpath('//script[@class="dataisland"]').map(&:delete)    
+
+    a = @html_doc.css('//script[@class="dataisland"]')
+    a.map(&:delete)    
+
     @html_doc.xpath('//div[@datactl]').map(&:delete)
 
     @html_doc.root.element('body').attributes.delete :onload
@@ -44,7 +47,7 @@ class DataIsland
           @location +'/' + h[:data]
       end
 
-      dynarex = Dynarex.new location2
+      dynarex = Dynarex.new location2      
       
       if (h[:order] and h[:order][/^desc|descending$/]) \
           or dynarex.order = 'descending' then
@@ -54,12 +57,14 @@ class DataIsland
       end
 
       xpath = "//*[@datasrc='" + '#' + h[:id] + "']"
-
+      
       @html_doc.xpath(xpath).each do |island|      
         render(records, x.attributes, island.element('//*[@datafld]'));
       end
+      
       x.delete unless h[:data] =~ /^\{/
     end
+    
   end
 
   private
@@ -68,7 +73,7 @@ class DataIsland
 
     parent = element.parent
     parentName = parent.name.downcase
-
+ 
     case parentName
       when 'body' 
         return nil
@@ -92,7 +97,6 @@ class DataIsland
     rec_orig = node_to_clone(node)    
 
     if rec_orig then
-
                 
       if (h[:rows_per_page]) then
 
@@ -114,7 +118,7 @@ class DataIsland
       else 
         recs = records
       end
-
+      
       recs.each do |record|
 
         rec = rec_orig.deep_clone
@@ -123,8 +127,9 @@ class DataIsland
         dest_nodes = {}        
       
         a = rec.xpath('.//span[@class]|.//a[@class]')
+
         a.each do |e|
-          r = e.attribute(:class)[/\{([^\}]+)\}$/,1]
+          r = e.attribute(:class)[0][/\{([^\}]+)\}$/,1]
           add_to_destnodes(dest_nodes,r,e) if r
         end
         
@@ -161,12 +166,12 @@ class DataIsland
 
                 classx = e2.attributes[:class]
 
-                if classx then
+                if classx and classx.length > 0 then
 
-                  if classx[/{#{field}/] then
+                  if classx[0][/{#{field}/] then
                     val = record[field]
-                    new_class = classx.sub(/\{[^\}]+\}/,val)
-                    e2.attributes[:class] = new_class
+                    new_class = classx[0].sub(/\{[^\}]+\}/,val)
+                    e2.attributes[:class] = [new_class]
                   elsif
                     e2.text = record[field]
                   end
@@ -192,11 +197,11 @@ class DataIsland
                 
                 classx = e2.attributes[:class]
 
-                if classx and classx[/{#{field}/] then
+                if classx and classx[0][/{#{field}/] then
 
                   val = record[field]
-                  new_class = classx.sub(/\{[^\}]+\}/,val)
-                  e2.attributes[:class] = new_class
+                  new_class = classx[0].sub(/\{[^\}]+\}/,val)
+                  e2.attributes[:class] = [new_class]
 
                 elsif e2.attributes[:name] then
                   
@@ -208,6 +213,7 @@ class DataIsland
                 elsif e2.attributes[:href] then
                   
                   href = e2.attributes[:href]
+
                   val = record[field]
                   new_href = href.sub(/\{[^\}]+\}/,val)
                   e2.attributes[:href] = new_href
