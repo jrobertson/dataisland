@@ -153,6 +153,12 @@ class DataIsland
           add_to_destnodes(dest_nodes,r,e) if r
         end        
 
+        rec.xpath('.//button[@onclick]').each do |e|
+
+          r = e.attribute(:onclick)[/\{([^\}]+)\}$/,1]
+          add_to_destnodes(dest_nodes,r,e) if r
+        end          
+        
         dest_nodes.keys.each do |raw_field|
 
           field = raw_field.to_sym
@@ -225,6 +231,20 @@ class DataIsland
                   
               when :img
                 e2.attributes[:src] = record[field]
+                
+              when :button
+
+                onclick = e2.attributes[:onclick]
+
+                if onclick then
+
+                  if onclick[/{#{field}/] then
+
+                    val = record[field]
+                    new_data = onclick.sub(/\{[^\}]+\}/,val)
+                    e2.attributes[:onclick] = new_data
+                  end
+                end                
             end
           
             e2.attributes.delete :datafld
