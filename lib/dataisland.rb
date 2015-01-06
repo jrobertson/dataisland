@@ -15,16 +15,13 @@ class DataIsland
   def initialize(location, opts={})
 
     buffer, typex = RXFHelper.read(location)
-
     @html_doc = Rexle.new(buffer.sub(/^<!DOCTYPE html>/,''))
 
     a = @html_doc.css('//script[@class="dataisland"]')
     a.map(&:delete)    
 
     @html_doc.xpath('//div[@datactl]').map(&:delete)
-
     @html_doc.root.element('body').attributes.delete :onload
-
     h = @html_doc.element('//object').attributes
 
     path = { url: -> {File.dirname(location)}, 
@@ -36,9 +33,8 @@ class DataIsland
     @html_doc.xpath("//object[@type='text/xml']").each do |x|
 
       h = x.attributes
+      tmp, type2 = RXFHelper.read(h[:data], opts)
 
-      tmp, type2 = RXFHelper.read(h[:data])
-      
       location2 = case h[:data]
         when /^https?:\/\//
           h[:data]
@@ -47,7 +43,7 @@ class DataIsland
         else
           @location +'/' + h[:data]
       end
-
+      
       dynarex = Dynarex.new location2, opts      
       
       if (h[:order] and h[:order][/^desc|descending$/]) \

@@ -12,9 +12,10 @@ class DataIsland
 
   # e.g. url = 'http://www.jamesrobertson.eu/index-template.html'
   #
-  def initialize(location)
+  def initialize(location, opts={})
 
     buffer, typex = RXFHelper.read(location)
+
     @html_doc = Rexle.new(buffer.sub(/^<!DOCTYPE html>/,''))
 
     a = @html_doc.css('//script[@class="dataisland"]')
@@ -47,7 +48,7 @@ class DataIsland
           @location +'/' + h[:data]
       end
 
-      dynarex = Dynarex.new location2      
+      dynarex = Dynarex.new location2, opts      
       
       if (h[:order] and h[:order][/^desc|descending$/]) \
           or dynarex.order = 'descending' then

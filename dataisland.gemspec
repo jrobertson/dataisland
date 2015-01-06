@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'dataisland'
-  s.version = '0.1.17'
+  s.version = '0.1.18'
   s.summary = 'dataisland'
   s.authors = ['James Robertson']
   s.files = Dir['lib/**/*.rb']
