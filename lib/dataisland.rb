@@ -14,11 +14,9 @@ class DataIsland
   #
   def initialize(location, opts={})
     
-    puts 'location : ' + location.inspect
     buffer, typex = RXFHelper.read(location)
-    puts 'buffer : ' + buffer.inspect
     @html_doc = Rexle.new(buffer.sub(/^<!DOCTYPE html>/,''))
-    puts 'after rexle'
+
     a = @html_doc.css('//script[@class="dataisland"]')
     a.map(&:delete)    
 
@@ -85,12 +83,13 @@ class DataIsland
   end
 
   def add_to_destnodes(dn, raw_key, node)
+
     key = raw_key.to_sym
     dn.has_key?(key) ? dn[key] << node : dn[key] = [node]
   end
   
   def render(flat_records, h, node)
-
+    
     sort_by = h[:sort_by]
     range = h[:range]
 
@@ -118,42 +117,43 @@ class DataIsland
       else 
         recs = records
       end
-      
-      recs.each do |record|
 
+      recs.each do |record|
+      
         rec = rec_orig.deep_clone
         
         # get a reference to each element containing the datafld attribute
         dest_nodes = {}        
-      
-        a = rec.xpath('.//span[@class]|.//a[@class]')
+
+        a = rec.xpath('*//span[@class]|*//a[@class]')
 
         a.each do |e|
+
           r = e.attribute(:class)[0][/\{([^\}]+)\}$/,1]
           add_to_destnodes(dest_nodes,r,e) if r
         end
         
-        rec.xpath('.//*[@datafld]').each do |e|
+        rec.xpath('*//*[@datafld]').each do |e|
           add_to_destnodes(dest_nodes,e.attribute(:datafld).downcase,e)
         end
         
-        rec.xpath('.//a[@name]').each do |e|
+        rec.xpath('*//a[@name]').each do |e|
           r = e.attribute(:name)[/\{([^\}]+)\}/,1]
           add_to_destnodes(dest_nodes,r,e) if r
         end        
 
-        rec.xpath('.//a[@href]').each do |e|
+        rec.xpath('*//a[@href]').each do |e|
           r = e.attribute(:href)[/\{([^\}]+)\}/,1]
           add_to_destnodes(dest_nodes,r,e) if r
         end        
       
-        rec.xpath('.//object[@data]').each do |e|
+        rec.xpath('*//object[@data]').each do |e|
 
           r = e.attribute(:data)[/\{([^\}]+)\}$/,1]
           add_to_destnodes(dest_nodes,r,e) if r
         end        
 
-        rec.xpath('.//button[@onclick]').each do |e|
+        rec.xpath('*//button[@onclick]').each do |e|
 
           r = e.attribute(:onclick)[/\{([^\}]+)\}$/,1]
           add_to_destnodes(dest_nodes,r,e) if r
